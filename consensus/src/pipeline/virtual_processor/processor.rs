@@ -36,8 +36,14 @@ use crate::{
     },
     params::Params,
     pipeline::{
-        deps_manager::VirtualStateProcessingMessage, pruning_processor::processor::PruningProcessingMessage,
-        virtual_processor::utxo_validation::UtxoProcessingContext, ProcessingCounters,
+        deps_manager::VirtualStateProcessingMessage,
+        pruning_processor::processor::PruningProcessingMessage,
+        tx_receipts_processor::{
+            pchmr_store::{DbPchmrStore, PchmrStore},
+            processor::MerkleProofsManager,
+        },
+        virtual_processor::utxo_validation::UtxoProcessingContext,
+        ProcessingCounters,
     },
     processes::{
         coinbase::CoinbaseManager,
@@ -75,7 +81,7 @@ use kaspa_consensus_notify::{
 use kaspa_consensusmanager::SessionLock;
 use kaspa_core::{debug, info, time::unix_now, trace, warn};
 use kaspa_database::prelude::{StoreError, StoreResultEmptyTuple, StoreResultExtensions};
-use kaspa_hashes::Hash;
+use kaspa_hashes::{Hash, ZERO_HASH};
 use kaspa_muhash::MuHash;
 use kaspa_notify::{events::EventType, notifier::Notify};
 
@@ -128,6 +134,9 @@ pub struct VirtualStateProcessor {
     pub(super) depth_store: Arc<DbDepthStore>,
     pub(super) selected_chain_store: Arc<RwLock<DbSelectedChainStore>>,
 
+    //temporary
+    pub(super) hash_to_pchmr_store: Arc<DbPchmrStore>,
+
     // Utxo-related stores
     pub(super) utxo_diffs_store: Arc<DbUtxoDiffsStore>,
     pub(super) utxo_multisets_store: Arc<DbUtxoMultisetsStore>,
@@ -150,6 +159,7 @@ pub struct VirtualStateProcessor {
     pub(super) pruning_point_manager: DbPruningPointManager,
     pub(super) parents_manager: DbParentsManager,
     pub(super) depth_manager: DbBlockDepthManager,
+    pub(super) merkle_proofs_manager: MerkleProofsManager,
 
     // Pruning lock
     pruning_lock: SessionLock,
@@ -208,6 +218,8 @@ impl VirtualStateProcessor {
             pruning_utxoset_stores: storage.pruning_utxoset_stores.clone(),
             lkg_virtual_state: storage.lkg_virtual_state.clone(),
 
+            hash_to_pchmr_store: storage.hash_to_pchmr_store.clone(),
+
             ghostdag_manager: services.ghostdag_primary_manager.clone(),
             reachability_service: services.reachability_service.clone(),
             relations_service: services.relations_service.clone(),
@@ -218,6 +230,7 @@ impl VirtualStateProcessor {
             pruning_point_manager: services.pruning_point_manager.clone(),
             parents_manager: services.parents_manager.clone(),
             depth_manager: services.depth_manager.clone(),
+            merkle_proofs_manager: services.merkle_proofs_manager.clone(),
 
             pruning_lock,
             notification_root,
@@ -984,9 +997,11 @@ impl VirtualStateProcessor {
         // Hash according to hardfork activation
         let storage_mass_activated = virtual_state.daa_score > self.storage_mass_activation_daa_score;
         let hash_merkle_root = calc_hash_merkle_root(txs.iter(), storage_mass_activated);
-
+        // let pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(virtual_state.ghostdag_data.selected_parent);
+        let _pchmr_merkle_root = ZERO_HASH; //TODO: the above currently crashes, find out why
         let accepted_id_merkle_root = calc_merkle_root(virtual_state.accepted_tx_ids.iter().copied());
         let utxo_commitment = virtual_state.multiset.clone().finalize();
+
         // Past median time is the exclusive lower bound for valid block time, so we increase by 1 to get the valid min
         let min_block_time = virtual_state.past_median_time + 1;
         let header = Header::new_finalized(
@@ -1003,6 +1018,8 @@ impl VirtualStateProcessor {
             virtual_state.ghostdag_data.blue_score,
             header_pruning_point,
         );
+        //temporary solution to avoid hardfork
+        self.hash_to_pchmr_store.insert(header.hash, _pchmr_merkle_root).unwrap();
         let selected_parent_hash = virtual_state.ghostdag_data.selected_parent;
         let selected_parent_timestamp = self.headers_store.get_timestamp(selected_parent_hash).unwrap();
         let selected_parent_daa_score = self.headers_store.get_daa_score(selected_parent_hash).unwrap();

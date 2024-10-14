@@ -10,6 +10,7 @@ use crate::{
             selected_chain::DbSelectedChainStore, statuses::DbStatusesStore, DB,
         },
     },
+    pipeline::tx_receipts_processor::processor::MerkleProofsManager,
     processes::{
         block_depth::BlockDepthManager, coinbase::CoinbaseManager, ghostdag::protocol::GhostdagManager,
         parents_builder::ParentsManager, pruning::PruningPointManager, pruning_proof::PruningProofManager, sync::SyncManager,
@@ -63,6 +64,7 @@ pub struct ConsensusServices {
     pub depth_manager: DbBlockDepthManager,
     pub mass_calculator: MassCalculator,
     pub transaction_validator: TransactionValidator,
+    pub merkle_proofs_manager: MerkleProofsManager,
 }
 
 impl ConsensusServices {
@@ -112,6 +114,8 @@ impl ConsensusServices {
             reachability_service.clone(),
             storage.ghostdag_primary_store.clone(),
         );
+        // TODO: give storages separately as above
+        let merkle_proofs_manager = MerkleProofsManager::new(params, &storage, reachability_service.clone());
         let ghostdag_managers = Arc::new(
             storage
                 .ghostdag_stores
@@ -223,6 +227,7 @@ impl ConsensusServices {
             depth_manager,
             mass_calculator,
             transaction_validator,
+            merkle_proofs_manager,
         })
     }
 }
