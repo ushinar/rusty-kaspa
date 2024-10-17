@@ -39,7 +39,8 @@ use crate::{
         deps_manager::VirtualStateProcessingMessage,
         pruning_processor::processor::PruningProcessingMessage,
         tx_receipts_processor::{
-            merkle_proofs_manager::MerkleProofsManager, pchmr_store::{DbPchmrStore, PchmrStore}
+            merkle_proofs_manager::MerkleProofsManager,
+            pchmr_store::{DbPchmrStore, PchmrStore},
         },
         virtual_processor::utxo_validation::UtxoProcessingContext,
         ProcessingCounters,
@@ -158,7 +159,7 @@ pub struct VirtualStateProcessor {
     pub(super) pruning_point_manager: DbPruningPointManager,
     pub(super) parents_manager: DbParentsManager,
     pub(super) depth_manager: DbBlockDepthManager,
-    pub(super) merkle_proofs_manager: MerkleProofsManager<DbSelectedChainStore,DbReachabilityStore,DbHeadersStore>,
+    pub(super) merkle_proofs_manager: MerkleProofsManager<DbSelectedChainStore, DbReachabilityStore, DbHeadersStore>,
 
     // Pruning lock
     pruning_lock: SessionLock,

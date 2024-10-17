@@ -26,7 +26,7 @@ pub type DbGhostdagManager =
     GhostdagManager<DbGhostdagStore, MTRelationsService<DbRelationsStore>, MTReachabilityService<DbReachabilityStore>, DbHeadersStore>;
 
 pub type DbDagTraversalManager = DagTraversalManager<DbGhostdagStore, DbReachabilityStore, MTRelationsService<DbRelationsStore>>;
-pub type DbMerkleProofsManager = MerkleProofsManager<DbSelectedChainStore,DbReachabilityStore,DbHeadersStore>;
+pub type DbMerkleProofsManager = MerkleProofsManager<DbSelectedChainStore, DbReachabilityStore, DbHeadersStore>;
 
 pub type DbWindowManager = DualWindowManager<DbGhostdagStore, BlockWindowCacheStore, DbHeadersStore, DbDaaStore>;
 
@@ -116,7 +116,7 @@ impl ConsensusServices {
             storage.ghostdag_primary_store.clone(),
         );
         // TODO: give storages separately as above
-       
+
         let ghostdag_managers = Arc::new(
             storage
                 .ghostdag_stores
@@ -136,7 +136,7 @@ impl ConsensusServices {
                 .collect_vec(),
         );
         let ghostdag_primary_manager = ghostdag_managers[0].clone();
-       
+
         let coinbase_manager = CoinbaseManager::new(
             params.coinbase_payload_script_public_key_max_len,
             params.max_coinbase_payload_len,
@@ -210,8 +210,16 @@ impl ConsensusServices {
             storage.pruning_point_store.clone(),
             storage.statuses_store.clone(),
         );
-        let merkle_proofs_manager = MerkleProofsManager::new(params, &storage,            dag_traversal_manager.clone(),
-        pruning_point_manager.clone(),ghostdag_primary_manager.clone(),reachability_service.clone(),storage.headers_store.clone(),storage.selected_chain_store.clone());
+        let merkle_proofs_manager = MerkleProofsManager::new(
+            params,
+            &storage,
+            dag_traversal_manager.clone(),
+            pruning_point_manager.clone(),
+            ghostdag_primary_manager.clone(),
+            reachability_service.clone(),
+            storage.headers_store.clone(),
+            storage.selected_chain_store.clone(),
+        );
 
         Arc::new(Self {
             storage,
