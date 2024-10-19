@@ -38,10 +38,7 @@ use crate::{
     pipeline::{
         deps_manager::VirtualStateProcessingMessage,
         pruning_processor::processor::PruningProcessingMessage,
-        tx_receipts_processor::{
-            merkle_proofs_manager::MerkleProofsManager,
-            pchmr_store::{DbPchmrStore, PchmrStore},
-        },
+        tx_receipts_processor::{merkle_proofs_manager::MerkleProofsManager, pchmr_store::DbPchmrStore},
         virtual_processor::utxo_validation::UtxoProcessingContext,
         ProcessingCounters,
     },
@@ -81,7 +78,7 @@ use kaspa_consensus_notify::{
 use kaspa_consensusmanager::SessionLock;
 use kaspa_core::{debug, info, time::unix_now, trace, warn};
 use kaspa_database::prelude::{StoreError, StoreResultEmptyTuple, StoreResultExtensions};
-use kaspa_hashes::{Hash, ZERO_HASH};
+use kaspa_hashes::Hash;
 use kaspa_muhash::MuHash;
 use kaspa_notify::{events::EventType, notifier::Notify};
 
@@ -997,8 +994,8 @@ impl VirtualStateProcessor {
         // Hash according to hardfork activation
         let storage_mass_activated = virtual_state.daa_score > self.storage_mass_activation_daa_score;
         let hash_merkle_root = calc_hash_merkle_root(txs.iter(), storage_mass_activated);
-        // let pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(virtual_state.ghostdag_data.selected_parent);
-        let _pchmr_merkle_root = ZERO_HASH; //TODO: the above currently crashes, find out why
+        let _pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(virtual_state.ghostdag_data.selected_parent);
+        // let _pchmr_merkle_root = ZERO_HASH; //TODO: the above currently crashes, find out why
         let accepted_id_merkle_root = calc_merkle_root(virtual_state.accepted_tx_ids.iter().copied());
         let utxo_commitment = virtual_state.multiset.clone().finalize();
 
@@ -1019,7 +1016,6 @@ impl VirtualStateProcessor {
             header_pruning_point,
         );
         //temporary solution to avoid hardfork
-        self.hash_to_pchmr_store.insert(header.hash, _pchmr_merkle_root).unwrap();
         let selected_parent_hash = virtual_state.ghostdag_data.selected_parent;
         let selected_parent_timestamp = self.headers_store.get_timestamp(selected_parent_hash).unwrap();
         let selected_parent_daa_score = self.headers_store.get_daa_score(selected_parent_hash).unwrap();
