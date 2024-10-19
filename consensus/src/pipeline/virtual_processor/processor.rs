@@ -38,7 +38,7 @@ use crate::{
     pipeline::{
         deps_manager::VirtualStateProcessingMessage,
         pruning_processor::processor::PruningProcessingMessage,
-        tx_receipts_processor::{merkle_proofs_manager::MerkleProofsManager, pchmr_store::DbPchmrStore},
+        tx_receipts_manager::{merkle_proofs_manager::MerkleProofsManager, pchmr_store::DbPchmrStore},
         virtual_processor::utxo_validation::UtxoProcessingContext,
         ProcessingCounters,
     },
