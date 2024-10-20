@@ -995,7 +995,6 @@ impl VirtualStateProcessor {
         let storage_mass_activated = virtual_state.daa_score > self.storage_mass_activation_daa_score;
         let hash_merkle_root = calc_hash_merkle_root(txs.iter(), storage_mass_activated);
         let _pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(virtual_state.ghostdag_data.selected_parent);
-        // let _pchmr_merkle_root = ZERO_HASH; //TODO: the above currently crashes, find out why
         let accepted_id_merkle_root = calc_merkle_root(virtual_state.accepted_tx_ids.iter().copied());
         let utxo_commitment = virtual_state.multiset.clone().finalize();
 
@@ -1015,7 +1014,6 @@ impl VirtualStateProcessor {
             virtual_state.ghostdag_data.blue_score,
             header_pruning_point,
         );
-        //temporary solution to avoid hardfork
         let selected_parent_hash = virtual_state.ghostdag_data.selected_parent;
         let selected_parent_timestamp = self.headers_store.get_timestamp(selected_parent_hash).unwrap();
         let selected_parent_daa_score = self.headers_store.get_daa_score(selected_parent_hash).unwrap();
