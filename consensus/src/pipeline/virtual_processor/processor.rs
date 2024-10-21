@@ -1,8 +1,7 @@
 use crate::{
     consensus::{
         services::{
-            ConsensusServices, DbBlockDepthManager, DbDagTraversalManager, DbGhostdagManager, DbParentsManager, DbPruningPointManager,
-            DbWindowManager,
+            ConsensusServices, DbBlockDepthManager, DbDagTraversalManager, DbGhostdagManager, DbMerkleProofsManager, DbParentsManager, DbPruningPointManager, DbWindowManager
         },
         storage::ConsensusStorage,
     },
@@ -14,31 +13,13 @@ use crate::{
             relations::MTRelationsService,
         },
         stores::{
-            acceptance_data::{AcceptanceDataStoreReader, DbAcceptanceDataStore},
-            block_transactions::{BlockTransactionsStoreReader, DbBlockTransactionsStore},
-            daa::DbDaaStore,
-            depth::{DbDepthStore, DepthStoreReader},
-            ghostdag::{DbGhostdagStore, GhostdagData, GhostdagStoreReader},
-            headers::{DbHeadersStore, HeaderStoreReader},
-            past_pruning_points::DbPastPruningPointsStore,
-            pruning::{DbPruningStore, PruningStoreReader},
-            pruning_utxoset::PruningUtxosetStores,
-            reachability::DbReachabilityStore,
-            relations::{DbRelationsStore, RelationsStoreReader},
-            selected_chain::{DbSelectedChainStore, SelectedChainStore},
-            statuses::{DbStatusesStore, StatusesStore, StatusesStoreBatchExtensions, StatusesStoreReader},
-            tips::{DbTipsStore, TipsStoreReader},
-            utxo_diffs::{DbUtxoDiffsStore, UtxoDiffsStoreReader},
-            utxo_multisets::{DbUtxoMultisetsStore, UtxoMultisetsStoreReader},
-            virtual_state::{LkgVirtualState, VirtualState, VirtualStateStoreReader, VirtualStores},
-            DB,
+            acceptance_data::{AcceptanceDataStoreReader, DbAcceptanceDataStore}, block_transactions::{BlockTransactionsStoreReader, DbBlockTransactionsStore}, daa::DbDaaStore, depth::{DbDepthStore, DepthStoreReader}, ghostdag::{DbGhostdagStore, GhostdagData, GhostdagStoreReader}, headers::{DbHeadersStore, HeaderStoreReader}, past_pruning_points::DbPastPruningPointsStore, pchmr_store::DbPchmrStore, pruning::{DbPruningStore, PruningStoreReader}, pruning_utxoset::PruningUtxosetStores, reachability::DbReachabilityStore, relations::{DbRelationsStore, RelationsStoreReader}, selected_chain::{DbSelectedChainStore, SelectedChainStore}, statuses::{DbStatusesStore, StatusesStore, StatusesStoreBatchExtensions, StatusesStoreReader}, tips::{DbTipsStore, TipsStoreReader}, utxo_diffs::{DbUtxoDiffsStore, UtxoDiffsStoreReader}, utxo_multisets::{DbUtxoMultisetsStore, UtxoMultisetsStoreReader}, virtual_state::{LkgVirtualState, VirtualState, VirtualStateStoreReader, VirtualStores}, DB
         },
     },
     params::Params,
     pipeline::{
         deps_manager::VirtualStateProcessingMessage,
         pruning_processor::processor::PruningProcessingMessage,
-        tx_receipts_manager::{merkle_proofs_manager::MerkleProofsManager, pchmr_store::DbPchmrStore},
         virtual_processor::utxo_validation::UtxoProcessingContext,
         ProcessingCounters,
     },
@@ -156,7 +137,7 @@ pub struct VirtualStateProcessor {
     pub(super) pruning_point_manager: DbPruningPointManager,
     pub(super) parents_manager: DbParentsManager,
     pub(super) depth_manager: DbBlockDepthManager,
-    pub(super) merkle_proofs_manager: MerkleProofsManager<DbSelectedChainStore, DbReachabilityStore, DbHeadersStore>,
+    pub(super) merkle_proofs_manager: DbMerkleProofsManager,
 
     // Pruning lock
     pruning_lock: SessionLock,
@@ -994,7 +975,8 @@ impl VirtualStateProcessor {
         // Hash according to hardfork activation
         let storage_mass_activated = virtual_state.daa_score > self.storage_mass_activation_daa_score;
         let hash_merkle_root = calc_hash_merkle_root(txs.iter(), storage_mass_activated);
-        let _pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(virtual_state.ghostdag_data.selected_parent);
+        //temporary
+        let _pchmr_merkle_root = self.merkle_proofs_manager.calc_pchmr_root(Some(virtual_state.ghostdag_data.selected_parent));
         let accepted_id_merkle_root = calc_merkle_root(virtual_state.accepted_tx_ids.iter().copied());
         let utxo_commitment = virtual_state.multiset.clone().finalize();
 
